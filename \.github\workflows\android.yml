@@ -1,0 +1,29 @@
+name: Build Android APK
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install Buildozer and Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git zip unzip openjdk-17-jdk autoconf libtool pkg-config zlib1g-dev libncurses5-dev libsqlite3-dev libgdbm-dev libssl-dev libbz2-dev libreadline-dev libffi-dev wget curl lld
+        pip install --upgrade pip
+        pip install buildozer cython==0.29.36 kivy python-docx docxtpl
+    - name: Initialize and Build APK
+      run: |
+        buildozer init
+        sed -i 's/^requirements = .*/requirements = python3,kivy,six,python-docx/' buildozer.spec
+        sed -i 's/#android.accept_sdk_license = False/android.accept_sdk_license = True/' buildozer.spec
+        yes | buildozer -v android debug
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ResidenceApp-APK
+        path: bin/*.apk
